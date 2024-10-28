@@ -1,26 +1,58 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import {
+	commands,
+	ExtensionContext,
+	StatusBarAlignment,
+	Uri,
+	ViewColumn,
+	window
+} from "vscode";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+import player from "play-sound";
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "vscode-study" is now active!');
+import path from 'path';
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('vscode-study.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from vscode-study!');
-	});
+export function activate(context: ExtensionContext) {
+	const statusBarBtn = window.createStatusBarItem(StatusBarAlignment.Right);
+	statusBarBtn.text = "$(zap) Study";
+	statusBarBtn.tooltip = "何見てるんですか?勉強してください!";
+	statusBarBtn.command = "vscode-study.study";
+	statusBarBtn.show();
 
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(
+		commands.registerCommand("vscode-study.study", () => {
+			const panel = window.createWebviewPanel(
+				"studyPage",
+				"何やってるんですか?勉強してください!",
+				ViewColumn.One,
+				{
+					enableScripts: true,
+				}
+			);
+			const videoUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, "media", "video.mp4"));
+			const audioUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, "media", "audio.mp3"));
+			const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, "media", "style.css"));
+			panel.webview.html = [
+				`<!DOCTYPE html>`,
+				`<html lang="ja">`,
+					`<head>`,
+						`<meta charset="UTF-8">`,
+						`<meta name="viewport" content="width=device-width, initial-scale=1.0">`,
+						`<title>何やってるんですか?勉強してください!</title>`,
+						`<link href="${styleUri}" rel="stylesheet">`,
+					`</head>`,
+					`<body>`,
+						`<input id="audioUri" type="hidden" value="${audioUri}" />`,
+						`<video controls autoplay muted>`,
+							`<source src="${videoUri}" type="video/mp4" />`,
+						`</video>`,
+					`</body>`,
+				`</html>`,
+			].join("\n");
+			const soundPlayer = player();
+			soundPlayer.play(path.join(__dirname, "../media/audio.mp3"));
+		}),
+		statusBarBtn,
+	);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
